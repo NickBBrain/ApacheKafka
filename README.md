@@ -32,9 +32,9 @@ Example (Conceptual):
 Code
 
 // C# example (Conceptual)
+
 private int sharedCounter = 0;
 private readonly object lockObject = new object();
-
 async Task IncrementCounterAsync()
 {
     await Task.Delay(10); // Simulate some work
@@ -43,6 +43,7 @@ async Task IncrementCounterAsync()
         sharedCounter++;
     }
 }
+
 
 async Task Usage()
 {
@@ -54,6 +55,7 @@ async Task Usage()
     await Task.WhenAll(tasks);
     Console.WriteLine($"Final counter value: {sharedCounter}"); // Should be 100
 }
+
 In this example, the lock statement ensures that only one task can access and modify sharedCounter at a time, preventing race conditions. 
 Important Considerations:
 Deadlocks:
