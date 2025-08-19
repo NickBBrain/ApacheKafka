@@ -5,20 +5,27 @@ To prevent race conditions when using async/await, ensure that shared mutable st
 Understanding Race Conditions with async/await
 async/await simplifies writing asynchronous code, but it doesn't eliminate the potential for race conditions. A race condition occurs when multiple tasks (in this case, potentially concurrent asynchronous operations) access and modify shared data, and the final result depends on the unpredictable order of their execution. 
 Strategies to Avoid Race Conditions
+
 **1. Minimize Shared Mutable State:**
 The best approach is often to avoid shared mutable state altogether if possible. Design your code so that each asynchronous task operates on its own data, minimizing the need for concurrent access to shared resources.
+
 **2. Synchronization Primitives:**
 If shared mutable state is unavoidable, use synchronization primitives like locks, mutexes, or semaphores to control access.
 In languages like C#, you can use lock statements or Mutex objects.
 In JavaScript, you can use async versions of locks or implement your own locking mechanism using promises.
+
 **3. Atomic Operations:**
 For simple operations on shared variables, consider using atomic operations (if your language/environment provides them). Atomic operations guarantee that a read-modify-write sequence happens as a single, indivisible operation.
+
 **4. Critical Sections:**
 Identify critical sections of code that access shared resources and ensure that only one task can be inside a critical section at a time.
+
 **5. Message Passing:**
 Another approach is to use message passing. Each asynchronous task sends messages to a central actor (or a group of actors) that manages the shared state. The actor processes messages one at a time, ensuring data consistency.
+
 **6. Task Queues:**
 Use a task queue to serialize access to shared resources. Each task is added to the queue and processed one at a time, ensuring that only one task modifies the shared state at any given moment.
+
 **7. Consider Frameworks/Libraries:**
 Some frameworks or libraries provide higher-level abstractions for managing concurrency and avoiding race conditions. For example, actor models or dataflow programming can simplify the handling of shared state. 
 Example (Conceptual):
