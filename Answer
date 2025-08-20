@@ -1,1 +1,35 @@
 
+
+
+چالش portability
+این پروژه باید قابلیت اجرا روی چند دیتابیس را داشته باشه
+الان مدلیه که وابستگی مستقیم به یک دیتابیس داره و امکان جابجای بین دیتابیس ها بدون تغییر کد نیست
+هدف انتزاع دسترسی به db و برطرف کردن وابستگی به یک db خاض
+hint
+سعی کنید وابستگی به یک provider خاص رو حذف کنین و از مکانیزم قابل پیکربندی برای تعیین provider و connectionString
+استفاده کنین
+کش نداریم
+ابتدا باید پکیج data.sqlClient برای sqlClientmanagedDataAccess برای oracle نصب بشن
+سپس برنامه با دو ارگومان اجرا کنین1.نام provider مثلا system.data.sqlClient
+2.connectionString مناسب دیتابیس:
+dotnet run system.data.sqlClient "DataSource=localhost ...."
+
+class Program
+    {
+        static void Main(string[] args)
+        {
+           var connectionString="Server=localhost....";
+           using(var connection=new sqlConnection(connectionString)){
+
+connection.Open();
+car command=command.CreateCommand();
+command.CommandText="select top 1 name from users";
+var reader=command.ExecuteReader();
+while(reader.Read()){
+
+    console.writeline(reader.GetString(0));
+}
+
+           }
+        }
+    }
