@@ -1,1 +1,38 @@
 
+var builder = WebApplication.CreateBuilder(args);
+var app = builder.Build();
+
+// مجوزهای ذخیره‌سازی براساس کشور مبدا
+var allowedRegions = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+{
+    { "IR", new List<string> { "IR" } },
+    { "DE", new List<string> { "DE", "IR" } }, // مثلا آلمان می‌تونه تو آلمان و ایران
+    { "US", new List<string> { "US", "DE" } }  // آمریکا می‌تونه تو آمریکا یا آلمان
+};
+
+app.MapPost("/store", async (HttpRequest request) =>
+{
+    var userRegion = request.Headers["X-User-Region"].ToString();
+    var targetRegion = request.Headers["X-Target-Region"].ToString();
+
+    if (string.IsNullOrWhiteSpace(userRegion) || string.IsNullOrWhiteSpace(targetRegion))
+    {
+        return Results.BadRequest("Region headers are required.");
+    }
+
+    if (!allowedRegions.ContainsKey(userRegion))
+    {
+        return Results.BadRequest($"User region '{userRegion}' not supported.");
+    }
+
+    // بررسی مجاز بودن منطقه هدف
+    if (!allowedRegions[userRegion].Contains(targetRegion, StringComparer.OrdinalIgnoreCase))
+    {
+        return Results.StatusCode(StatusCodes.Status403Forbidden);
+    }
+
+    // اینجای واقعی باید Logic ذخیره داده باشه
+    return Results.Ok($"✅ Data stored in {targetRegion} for user {userRegion}");
+});
+
+app.Run();
