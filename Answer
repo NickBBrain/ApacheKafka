@@ -1,1 +1,72 @@
-badi
+
+پیاده سازی دوسرویس داخلی برای مدیریت داده ای ساده
+ارتباط بین سرویس ها به درسای برقرار نشده یا داده به درستی منتقل نمیشود
+وظیفه تحلیل ساختار فعلی
+شناسایی مشکل در نحوه ارتباط و اصلاح
+تا داده به صورت صحیح بین سرویس ها رد و بدل بشن
+کش نمیشه استفاده کرد
+و باید dependecyInject استفاده کنه
+چالش thread safty  در سرویس
+dataprovider در سناریو چند درخواستی
+ساختار و نحوه ارتباط dataprovider و Idataprovider تحلیل بشه
+
+
+
+var builder=WebApplication.CreateBuilder(args);
+builder.services.AddSingleton<idataprovider,dataprovider>();
+builder.services.AddSingleton<idataprocessor,dataprocessor>();
+var app=builder.Build();
+
+app.MapGet("/data",(idataprocessor processor)=>processor.GetProcessedData());
+app.MapGet("/data",async (HttpContext context,IDataProvider provider)=>
+
+{
+
+    var value=await context.Request.ReadFromJsonAsync<string>();
+    if(value!=null){
+        provider.AddData(value);
+        context.Response.StatusCode=201;
+    }
+    else{
+        context.Response.StatusCode=400;
+    }
+}
+
+);
+
+app.Run();
+public interface IDataProvider{
+    void AddData(string  value);
+    List<string> getAllData();
+}
+public class DataProvider:IDataProvider
+{
+    private list<string> _data=new List<string>();
+   public void AddData(string  value){
+    _data.Add(value);
+   }
+    public List<string> getAllData(){
+
+        retturn _data;
+    }
+
+    }
+
+    public interface IDataProcessor{
+    
+    List<string> getProcessData();
+}
+
+public class DataProcessor:IDataProcessor
+{
+    private readonly IDataProvider _provider;
+   public DataProcessor(IDataProvider provider){
+    _provider=provider;
+   }
+public List<string> GetProcessedData(){
+    var data=_provider.getAllData();
+    retturn data.Select(d=>d.ToUpperInvarient().ToList());
+}
+
+    }
+}
