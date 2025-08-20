@@ -1,1 +1,41 @@
 
+بهبود نگهداری و توسعه ماژول گردازش داده
+ساختار پردازش داده به صورت سخت کد شده و غیر قابل توسعه ساختارهرگونه اضافه یا تغییر 
+منطق جدید نیازمند ویرایش مستقیم حلقه ها و شرط هاست که باعث سختی میشه
+از روشهایی استفده کنین کهافزودن قوانین یا فیلترهای جدید بدون تغییر کداصلی باشه
+
+hint
+به جای استفاده از شروط چندگانهو حلقه های تو در تو از الگوی strategy یا chain of repons
+
+به جداسازی مسئولیت ها و پیاده سازی اینترفیس ها فکرکنین
+
+
+
+
+
+using System.Collections.Generic;
+class Program
+    {
+        static void Main(string[] args)
+        {
+            var inputData=new List<int>{1,2,3,4,5};
+            var processedData=new List<int>();
+
+            foreach(var item in inputData){
+
+                int result=item;
+                if(item%2==0)
+                result=item*2;
+                else
+                result=item+3;
+                
+                if(result>5){
+                    processedData.Add(result);
+                }
+            }
+
+            foreach(var val in processedData){
+                Console.WriteLine(val);
+            }
+        }
+    }
