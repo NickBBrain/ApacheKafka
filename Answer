@@ -9,3 +9,10 @@ class program{
         Console.Writeline("Finish");
     }
 }Ma Amadeim :)
+
+garbage collector .net
+مدیریت حافظه و منابع درست نیست
+اجرای مکرر memoryleak میخوره
+مطمئن شم dispose pattern درست انجام شده
+استفاده مناسب از  using
+رعایت اصول Garbage colectoin
