@@ -1,38 +1,74 @@
-
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-// مجوزهای ذخیره‌سازی براساس کشور مبدا
-var allowedRegions = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
+// تعریف قوانین منطقه‌ای - هر منطقه فقط می‌تونه در مناطق مجاز ذخیره‌سازی کنه
+var allowedRegions = new Dictionary<string, List<string>>
 {
-    { "IR", new List<string> { "IR" } },
-    { "DE", new List<string> { "DE", "IR" } }, // مثلا آلمان می‌تونه تو آلمان و ایران
-    { "US", new List<string> { "US", "DE" } }  // آمریکا می‌تونه تو آمریکا یا آلمان
+    {"IR", new List<string>{"IR"}}, // ایران فقط می‌تونه در خودش ذخیره کنه
+    {"DE", new List<string>{"DE", "EU"}}, // آلمان می‌تونه در خودش یا EU ذخیره کنه  
+    {"US", new List<string>{"US", "CA"}}, // آمریکا می‌تونه در خودش یا کانادا ذخیره کنه
+    {"EU", new List<string>{"EU", "DE", "FR", "IT"}}, // اتحادیه اروپا
+    {"CA", new List<string>{"CA", "US"}} // کانادا
 };
 
 app.MapPost("/store", async (HttpRequest request) =>
 {
-    var userRegion = request.Headers["X-User-Region"].ToString();
-    var targetRegion = request.Headers["X-Target-Region"].ToString();
+    var userRegion = request.Headers["X-User-Region"].ToString().ToUpper();
+    var targetRegion = request.Headers["X-Target-Region"].ToString().ToUpper();
 
-    if (string.IsNullOrWhiteSpace(userRegion) || string.IsNullOrWhiteSpace(targetRegion))
+    // بررسی وجود هدرهای مورد نیاز
+    if (string.IsNullOrEmpty(userRegion) || string.IsNullOrEmpty(targetRegion))
     {
-        return Results.BadRequest("Region headers are required.");
+        return Results.BadRequest(new { 
+            error = "Region headers are required", 
+            required = new[] { "X-User-Region", "X-Target-Region" }
+        });
     }
 
+    // بررسی اینکه منطقه کاربر پشتیبانی می‌شه یا نه
     if (!allowedRegions.ContainsKey(userRegion))
     {
-        return Results.BadRequest($"User region '{userRegion}' not supported.");
+        return Results.BadRequest(new { 
+            error = "User region not supported", 
+            userRegion = userRegion,
+            supportedRegions = allowedRegions.Keys
+        });
     }
 
-    // بررسی مجاز بودن منطقه هدف
-    if (!allowedRegions[userRegion].Contains(targetRegion, StringComparer.OrdinalIgnoreCase))
+    // **اصلاح مشکل اصلی**: بررسی اینکه آیا منطقه هدف برای این کاربر مجاز هست یا نه
+    var allowedTargetRegions = allowedRegions[userRegion];
+    if (!allowedTargetRegions.Contains(targetRegion))
     {
-        return Results.StatusCode(StatusCodes.Status403Forbidden);
+        return Results.Forbid(); // خطای 403 طبق درخواست
     }
 
-    // اینجای واقعی باید Logic ذخیره داده باشه
-    return Results.Ok($"✅ Data stored in {targetRegion} for user {userRegion}");
+    // اگر همه چیز درست بود، داده رو ذخیره کن
+    return Results.Ok(new { 
+        message = $"Data stored successfully in {targetRegion} for user from {userRegion}",
+        userRegion = userRegion,
+        targetRegion = targetRegion,
+        timestamp = DateTime.UtcNow
+    });
+});
+
+// اضافه کردن endpoint برای مشاهده قوانین منطقه‌ای
+app.MapGet("/regions", () => Results.Ok(new { 
+    allowedRegions = allowedRegions,
+    description = "Shows which target regions are allowed for each user region"
+}));
+
+// اضافه کردن middleware برای لاگ کردن درخواست‌ها
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {context.Request.Method} {context.Request.Path}");
+    
+    if (context.Request.Headers.ContainsKey("X-User-Region"))
+        Console.WriteLine($"User Region: {context.Request.Headers["X-User-Region"]}");
+    
+    if (context.Request.Headers.ContainsKey("X-Target-Region"))
+        Console.WriteLine($"Target Region: {context.Request.Headers["X-Target-Region"]}");
+    
+    await next.Invoke();
 });
 
 app.Run();
