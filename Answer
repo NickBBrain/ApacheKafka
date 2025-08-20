@@ -1,1 +1,76 @@
-berim badi
+
+extensibility در معماری ماژولار
+این پروژه قابلیت افزودن عملیات جدید برای پردازش داده را فراهم میکنه
+ساختار الانش طوریه که برای افزودن عملیاتجدید کدهای فعلی رو باید تغییر داد و توسعه پذیری مناسبی نداره
+هدف اینه با افزودن عملیات جدید کدهای اصلی  با کمترین وابستگی  انجام بشن
+کش نباید داشته باشه
+چالش بعدی اینه که تمام پیاده سازی های IdataOperation  را به صورت داینامیک کشف کرد
+hint
+fبررسی کنین که ایا با reflection یا سایر تکنینک ها پیاده سازی IdataOperation شناسایی و ثبت بشه
+
+
+namespace DetNet{
+public interface IDataOperation{
+    string Name{get;}
+    int Process(int input);
+}
+
+public class IncrementOperation:IDataOperation{
+    public string Name =>"Increment";
+    public int Process(int input){
+        return input+1;
+    }
+}
+
+public class DoubleOperation:IDataOperation{
+    public string Name =>"Double";
+    public int Process(int input){
+        return input*2;
+    }
+}
+
+
+public class OperationProcessor
+{
+    private readonly List<IDataOperation> _operation;
+    public OperationProcessor(){
+        _operation=new List<IDataOperation>{
+            new IncrementOperation(),new DoubleOperation()
+        };
+    }
+
+public int Execute(string operationName,int value)
+{
+    foreach(var op in _operation){
+        if(op.Name==operationName)
+        {return op.Process(value);}
+    }
+    throw new InvaldOperationException($"op '{operationName} :'")
+}
+
+}
+
+class program{
+
+    static void main (string[] args){
+        var processor=new OperationProcessor();
+        console.WritelINE("enter op");
+        var op=console.readline();
+        console.write("enter value");
+        var valueStr=console.readline();
+        if(!int.TryParse(valueStr,out int value)){
+console.WritelINE("inavalid");
+return;
+
+        }
+        try{
+
+            var result=processor.Execute(op,value);
+        console.writeline($"Result:{result}");
+
+        }
+
+        catch(Exception ex){console.WritelINE(ex.Message);}
+    }
+}
+}
