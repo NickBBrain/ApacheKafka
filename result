@@ -1,1 +1,48 @@
 
+using System;
+using System.Data;
+using System.Data.Common;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        if (args.Length < 2)
+        {
+            Console.WriteLine("Usage: dotnet run <providerName> <connectionString>");
+            return;
+        }
+
+        string providerName = args[0];       // مثل "System.Data.SqlClient" یا "Oracle.ManagedDataAccess.Client"
+        string connectionString = args[1];   // رشته اتصال دیتابیس
+
+        try
+        {
+            // ساخت DbProviderFactory بر اساس providerName
+            var factory = DbProviderFactories.GetFactory(providerName);
+
+            using var connection = factory.CreateConnection();
+            if (connection == null)
+            {
+                Console.WriteLine("Failed to create a connection object.");
+                return;
+            }
+
+            connection.ConnectionString = connectionString;
+            connection.Open();
+
+            using var command = connection.CreateCommand();
+            command.CommandText = "SELECT TOP 1 Name FROM Users"; // برای Oracle باید معادلش بنویسی، مثلا: "SELECT Name FROM Users WHERE ROWNUM = 1"
+
+            using var reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine(reader.GetString(0));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Database error: {ex.Message}");
+        }
+    }
+}
