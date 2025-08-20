@@ -1,1 +1,11 @@
-Ma Amadeim :)
+class program{
+    stataic void main(string[] args){
+        for (int i=0;i<1000;i++){
+            var resource=new ResourceHolder();
+            resource.DoWork();
+        }
+        GC.Collect();
+        gc.WaitForPendingFinalizer();
+        Console.Writeline("Finish");
+    }
+}Ma Amadeim :)
