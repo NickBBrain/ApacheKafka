@@ -1,84 +1,96 @@
-------------------------------------------2-----------------
+-------------------3------------------------- Lets Go
+using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// ثبت سرویس‌ها
-builder.Services.AddSingleton<IDataProvider, DataProvider>();
-builder.Services.AddSingleton<IDataProcessor, DataProcessor>();
-
-var app = builder.Build();
-
-// GET: دریافت داده پردازش‌شده
-app.MapGet("/data", (IDataProcessor processor) =>
+namespace DetNet
 {
-    return processor.GetProcessedData();
-});
-
-// POST: اضافه کردن داده جدید
-app.MapPost("/data", async (HttpContext context, IDataProvider provider) =>
-{
-    var value = await context.Request.ReadFromJsonAsync<string>();
-    if (!string.IsNullOrWhiteSpace(value))
+    public interface IDataOperation
     {
-        provider.AddData(value);
-        context.Response.StatusCode = StatusCodes.Status201Created;
+        string Name { get; }
+        int Process(int input);
     }
-    else
+
+    public class IncrementOperation : IDataOperation
     {
-        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+        public string Name => "Increment";
+        public int Process(int input) => input + 1;
     }
-});
 
-app.Run();
-
-public interface IDataProvider
-{
-    void AddData(string value);
-    List<string> GetAllData();
-}
-
-public class DataProvider : IDataProvider
-{
-    private readonly List<string> _data = new();
-    private readonly object _lock = new();
-
-    public void AddData(string value)
+    public class DoubleOperation : IDataOperation
     {
-        lock (_lock)
+        public string Name => "Double";
+        public int Process(int input) => input * 2;
+    }
+
+    public class OperationProcessor
+    {
+        private readonly IEnumerable<IDataOperation> _operations;
+
+        public OperationProcessor(IEnumerable<IDataOperation> operations)
         {
-            _data.Add(value);
+            _operations = operations;
+        }
+
+        public int Execute(string operationName, int value)
+        {
+            var op = _operations.FirstOrDefault(o => 
+                string.Equals(o.Name, operationName, StringComparison.OrdinalIgnoreCase));
+
+            if (op is null)
+                throw new InvalidOperationException($"Operation '{operationName}' not found.");
+
+            return op.Process(value);
         }
     }
 
-    public List<string> GetAllData()
+    public static class ServiceCollectionExtensions
     {
-        lock (_lock)
+        public static IServiceCollection AddDataOperations(this IServiceCollection services)
         {
-            return new List<string>(_data);
+            var operationType = typeof(IDataOperation);
+            var implementations = Assembly.GetExecutingAssembly()
+                                          .GetTypes()
+                                          .Where(t => operationType.IsAssignableFrom(t) && 
+                                                      t.IsClass && !t.IsAbstract);
+
+            foreach (var impl in implementations)
+                services.AddTransient(operationType, impl);
+
+            return services;
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // DI Container setup
+            var services = new ServiceCollection();
+            services.AddDataOperations(); // Register all IDataOperation dynamically
+            services.AddTransient<OperationProcessor>();
+
+            var provider = services.BuildServiceProvider();
+            var processor = provider.GetRequiredService<OperationProcessor>();
+
+            Console.Write("Enter operation name: ");
+            var op = Console.ReadLine();
+
+            Console.Write("Enter value: ");
+            if (!int.TryParse(Console.ReadLine(), out var value))
+            {
+                Console.WriteLine("Invalid value.");
+                return;
+            }
+
+            try
+            {
+                var result = processor.Execute(op, value);
+                Console.WriteLine($"Result: {result}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }
-
-public interface IDataProcessor
-{
-    List<string> GetProcessedData();
-}
-
-public class DataProcessor : IDataProcessor
-{
-    private readonly IDataProvider _provider;
-
-    public DataProcessor(IDataProvider provider)
-    {
-        _provider = provider;
-    }
-
-    public List<string> GetProcessedData()
-    {
-        return _provider.GetAllData()
-                        .Select(d => d.ToUpperInvariant())
-                        .ToList();
-    }
-}
-
-
