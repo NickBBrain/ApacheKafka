@@ -70,3 +70,87 @@ public List<string> GetProcessedData(){
 
     }
 }
+
+-----------------------------------
+var builder = WebApplication.CreateBuilder(args);
+
+// ثبت سرویس‌ها
+builder.Services.AddSingleton<IDataProvider, DataProvider>();
+builder.Services.AddSingleton<IDataProcessor, DataProcessor>();
+
+var app = builder.Build();
+
+// GET: دریافت داده پردازش‌شده
+app.MapGet("/data", (IDataProcessor processor) =>
+{
+    return processor.GetProcessedData();
+});
+
+// POST: اضافه کردن داده جدید
+app.MapPost("/data", async (HttpContext context, IDataProvider provider) =>
+{
+    var value = await context.Request.ReadFromJsonAsync<string>();
+    if (!string.IsNullOrWhiteSpace(value))
+    {
+        provider.AddData(value);
+        context.Response.StatusCode = StatusCodes.Status201Created;
+    }
+    else
+    {
+        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+    }
+});
+
+app.Run();
+
+public interface IDataProvider
+{
+    void AddData(string value);
+    List<string> GetAllData();
+}
+
+public class DataProvider : IDataProvider
+{
+    private readonly List<string> _data = new();
+    private readonly object _lock = new();
+
+    public void AddData(string value)
+    {
+        lock (_lock)
+        {
+            _data.Add(value);
+        }
+    }
+
+    public List<string> GetAllData()
+    {
+        lock (_lock)
+        {
+            return new List<string>(_data);
+        }
+    }
+}
+
+public interface IDataProcessor
+{
+    List<string> GetProcessedData();
+}
+
+public class DataProcessor : IDataProcessor
+{
+    private readonly IDataProvider _provider;
+
+    public DataProcessor(IDataProvider provider)
+    {
+        _provider = provider;
+    }
+
+    public List<string> GetProcessedData()
+    {
+        return _provider.GetAllData()
+                        .Select(d => d.ToUpperInvariant())
+                        .ToList();
+    }
+}
+
+
