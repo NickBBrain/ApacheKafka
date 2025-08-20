@@ -1,1 +1,41 @@
 
+
+regionBasedDataStorageValidator
+یه مینیمال api  که وظیفه ش اعتبارسنجی ذخیره داده ها براساس قوانین منطقه ای هسا
+هدف اینه که داده های کاربران فقط ئدر دیتاسنترهای مجاز باتوجه به کشور مبدا کاربر ذخیره بشنچالش شناسایی و رفع نقض قوانین ذخیره داده براساس منطقع س
+برای تست از این هدرها استفاده بشه
+از هدرهای زیر استفاده باشهx-user-region
+x-target-region
+کش نداریماگر منطقه هدف مجاز نبود خطای 403
+بررسی بشه منطقه کاربر در لیست مناطق مجاز هست یا نه
+
+
+var builder=WebApplication.CreateBuilder(args);
+var app=builder.Build();
+
+var allowedRegions=new Dictionary<string,List<string>>{
+{"IR",new List<string>{"IR"}}
+{"DE",new List<string>{"DE"}}
+{"US",new List<string>{"US"}}
+
+};
+
+app.MapPost("/store",async (HttpRequest request)=>
+{
+    var userRegion=request.Headers["X-User-Region"].ToString();
+    var targetRegion=request.Headers["X-Target-Region"].ToString();
+
+    if(string.isNUllOrEmpty(userRegion) || string.isNUllOrEmpty(targetRegion)){
+return Results.BadRequest("region header are required");
+
+    }
+    
+    if(!allowedRegions.ContainsKey(userRegion)){
+return Results.BadRequest("user region not supported");
+
+    }
+
+    //چالش : منطق بررسی ذخیره سازی داده طبق قوانین منطقه ای ناقص است و هر داده ای را حتی اگر مجاز نباشد، ذخیره میکند
+    return Results.Ok($"Data stroed in {targetRegion} for user {userRegion}");
+});
+app.Run();
